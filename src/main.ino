@@ -34,6 +34,8 @@
 
 #include "wifi_passwd.h"
 
+#include "XAir.hpp"
+
 // TYPES
 typedef enum {
   STATE_STARTUP,
@@ -451,30 +453,7 @@ void getCommonData() {
   sendMsg("/config/mute/1");
 }
 
-void sendMsg(const char* msg_str) {
-  Serial.print("Sending msg: ");
-  Serial.println(msg_str);
-  
-  OSCMessage msg(msg_str);
-  Udp.beginPacket(outIp, outPort);
-  msg.send(Udp);
-  Udp.endPacket();
-}
 
-template<typename T>
-void sendMsgWithParameter(const char* msg_str, T param) {
-  Serial.print("Sending msg: ");
-  Serial.print(msg_str);
-  Serial.print(" (");
-  Serial.print(param);
-  Serial.println(")");
-  
-  OSCMessage msg(msg_str);
-  msg.add(param);
-  Udp.beginPacket(outIp, outPort);
-  msg.send(Udp);
-  Udp.endPacket();
-}
 
 static void startRecording() {
   sendMsgWithParameter("/-stat/tape/state", 4);
@@ -559,6 +538,31 @@ void rec_state_notify(OSCMessage &msg) {
   if(!wasRecording && isRecording) {
     recStart = millis();
   }
+}
+
+void sendMsg(const char* msg_str) {
+  Serial.print("Sending msg: ");
+  Serial.println(msg_str);
+  
+  OSCMessage msg(msg_str);
+  Udp.beginPacket(outIp, outPort);
+  msg.send(Udp);
+  Udp.endPacket();
+}
+
+template<typename T>
+void sendMsgWithParameter(const char* msg_str, T param) {
+  Serial.print("Sending msg: ");
+  Serial.print(msg_str);
+  Serial.print(" (");
+  Serial.print(param);
+  Serial.println(")");
+  
+  OSCMessage msg(msg_str);
+  msg.add(param);
+  Udp.beginPacket(outIp, outPort);
+  msg.send(Udp);
+  Udp.endPacket();
 }
 
 void receiveMsg() {
