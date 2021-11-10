@@ -31,8 +31,10 @@
 // AND https://wiki.munichmakerlab.de/images/1/17/UNOFFICIAL_X32_OSC_REMOTE_PROTOCOL_%281%29.pdf
 // AND https://sourceforge.net/projects/sysexoscgen/
 
-
 #include "wifi_passwd.h"
+
+// Devmode (no mixer available)
+#define DEV_MODE_NO_MIXER (0)
 
 // TYPES
 typedef enum {
@@ -43,7 +45,6 @@ typedef enum {
 } eSystemState;
 
 // Constants
-
 const int numChannels = 16;
 
 // WiFi setup
@@ -142,6 +143,7 @@ void setup() {
   pinMode(ENCODER_SW, INPUT_PULLUP);
 
   enterState(STATE_CONNECTING);
+#if !(DEV_MODE_NO_MIXER)
   Serial.println();
   Serial.print("Connecting to ");     // to DEBUG screen
   Serial.println(ssid);               // to DEBUG screen
@@ -174,6 +176,7 @@ void setup() {
     delay(50);
     receiveMsg();
   }
+#endif
 
   enterState(STATE_RUNNING);
 }
@@ -248,7 +251,7 @@ void processUserInput() {
     static bool init = true;
     static int last_sw1_val = 0;
     static int last_sw2_val = 0;
-    if(!init && last_sw1_val != sw1_val) {
+    if(!init && last_sw1_val != sw1_val && sw1_val) {
       if(isRecording) {
         stopRecording();
       } else {
@@ -256,7 +259,7 @@ void processUserInput() {
       }
     }
 
-    if(!init && last_sw2_val != sw2_val) {
+    if(!init && last_sw2_val != sw2_val && sw2_val) {
       muteVocals(!vocalsMuted);
     }
 
@@ -417,6 +420,7 @@ static void updateRemoteStatus()
   if(millis_passed >= REMOTE_STATUS_UPDATE_CYCLE_MS) {
     lastRemoteStatusUpdateMs = millis();
 
+#if !(DEV_MODE_NO_MIXER)
     getCommonData();
 
 #if 0
@@ -425,6 +429,7 @@ static void updateRemoteStatus()
 
     delay(50);
     receiveMsg();
+#endif
   }
 }
 
@@ -477,15 +482,32 @@ void sendMsgWithParameter(const char* msg_str, T param) {
 }
 
 static void startRecording() {
+  Serial.println("startRecording");
+#if !(DEV_MODE_NO_MIXER)
   sendMsgWithParameter("/-stat/tape/state", 4);
+#else
+  isRecording = true;
+  recStart = millis();
+#endif
 }
 
 static void stopRecording() {
+  Serial.println("stopRecording");
+#if !(DEV_MODE_NO_MIXER)
   sendMsgWithParameter("/-stat/tape/state", 0);
+#else
+  isRecording = false;
+#endif
 }
 
 static void muteVocals(bool mute) {
+  Serial.print("Set mute: ");
+  Serial.println(mute);
+#if !(DEV_MODE_NO_MIXER)
   sendMsgWithParameter("/config/mute/1", (int)mute);
+#else
+  vocalsMuted = mute;
+#endif
 }
 
 void printMsgAddress(OSCMessage &msg) {
